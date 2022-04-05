@@ -1,7 +1,6 @@
 import { AppContext } from "app/AppContext";
 import { AppContextHandler } from "app/AppContextHandler";
 import React from "react";
-import ReactDOMServer from "react-dom/server";
 import * as Path from "utils/path";
 import { Async } from "./Async";
 
@@ -40,49 +39,58 @@ export class RouterHandler extends AppContextHandler
 
 		const prevURL = this.url;
 
-		const e = { url, prev: prevURL, isLoading: true };
-
-		const isCanceled = () =>
-		{
-			if (this.activeUpdater !== ID)
-			{
-				env.isDev && console.warn(`${url} canceled!`);
-				return true;
-			}
-			return false;
-		}
-
-		for (const cb of this.routeListeners)
-		{
-			await cb(e);
-			if (isCanceled())
-				return;
-		}
-
-		url = await this.appContext.prefetch(url);
-
-		if (isCanceled())
-			return;
-
 		if (this.url !== url)
 		{
+			const e = { url, prev: prevURL, isLoading: true };
+
+			const isCanceled = () =>
+			{
+				if (this.activeUpdater !== ID)
+				{
+					env.isDev && console.warn(`${url} canceled!`);
+					return true;
+				}
+				return false;
+			}
+
+			let didPrefetch = false;
+
+			url = await this.appContext.prefetch(url, async () => 
+			{
+				if (!didPrefetch)
+				{
+					didPrefetch = true;
+					for (const cb of this.routeListeners)
+					{
+						await cb(e);
+						if (isCanceled())
+							return;
+					}
+				}
+			});
+
+			if (isCanceled())
+				return;
+
 			this.url = url;
+
 			if (!fromHistory)
 			{
 				window.history.pushState(null, "", this.url);
 				window.history.replaceState(null, "", url);
 				document.title = this.appTitle;
 			}
+
 			this._urlUpdater && this._urlUpdater(url);
-		}
 
-		e.isLoading = false;
+			e.isLoading = false;
 
-		for (const cb of this.routeListeners)
-		{
-			await cb(e);
-			if (isCanceled())
-				return;
+			for (const cb of this.routeListeners)
+			{
+				await cb(e);
+				if (isCanceled())
+					return;
+			}
 		}
 	}
 

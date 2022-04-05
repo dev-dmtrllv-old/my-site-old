@@ -37,7 +37,7 @@ export class AppContext
 		);
 	}
 
-	public readonly prefetch = async (url: string, ctx: AppContext = AppContext.createServerContext(this.app, this.routerHandler.appTitle, url, this.asyncHandler.cache)) =>
+	public readonly prefetch = async (url: string, onPrefetch: () => any = () => {}, ctx: AppContext = AppContext.createServerContext(this.app, this.routerHandler.appTitle, url, this.asyncHandler.cache)) =>
 	{
 		ReactDOMServer.renderToStaticMarkup(
 			<ctx.Context>
@@ -47,8 +47,9 @@ export class AppContext
 
 		if (ctx.asyncHandler.toResolveCount > 0)
 		{
+			await onPrefetch();
 			await ctx.asyncHandler.resolveAll();
-			await this.prefetch(url, ctx);
+			await this.prefetch(url, onPrefetch, ctx);
 		}
 		else
 		{

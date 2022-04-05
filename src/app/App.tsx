@@ -1,13 +1,19 @@
 import React from "react";
+import { wait } from "utils";
 import { Page, Router, useRouter } from "./components/Router";
 
 export const App = () =>
 {
-	const [isLoading, setIsLoading] = React.useState(false);
+	const [state, setIsLoading] = React.useState<{ from: string, to: string } | null>(null);
 
 	const { routeTo, onRouteChange } = useRouter();
 
-	onRouteChange(e => setIsLoading(e.isLoading));
+	onRouteChange(async e => 
+	{
+		setIsLoading(e.isLoading ? { from: e.prev, to: e.url } : null);
+		if (e.isLoading)
+			await wait(800);
+	});
 
 	return (
 		<Router falltrough={true}>
@@ -15,9 +21,14 @@ export const App = () =>
 			<button onClick={() => routeTo("/cv")}>CV</button>
 
 			<Page exact path="/" pagePath="home" prefetch />
-			<Page exact path="/cv" pagePath="cv" prefetch/>
-			
-			<h1>{isLoading && "LOADING..."}</h1>
+			<Page exact path="/cv" pagePath="cv" prefetch />
+
+			{state && (
+				<>
+					<h1>Loading url {state.to}</h1>
+					<span>(from: {state?.from})</span>
+				</>
+			)}
 		</Router>
 	);
 }
