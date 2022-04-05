@@ -1,0 +1,58 @@
+{
+	"compilerOptions": {
+		"outDir": "./dist",
+		"target": "es2017",
+		"lib": [
+			"dom",
+			"dom.iterable",
+			"esnext"
+		],
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"strict": true,
+		"module": "es2022",
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+		"jsx": "react",
+		"baseUrl": "src",
+		"rootDir": "src",
+		"experimentalDecorators": true,
+		"sourceMap": true,
+		"paths": {
+			"app": [
+				"app"
+			],
+			"app/*": [
+				"app/*"
+			],
+			"utils": [
+				"utils"
+			],
+			"utils/*": [
+				"utils/*"
+			],
+			"components": [
+				"app/components"
+			],
+			"components/*": [
+				"app/components/*"
+			],
+			"views": [
+				"app/views"
+			],
+			"views/*": [
+				"app/views/*"
+			],
+			"stores": [
+				"app/stores"
+			],
+			"stores/*": [
+				"app/stores/*"
+			]
+		}
+	},
+	"exclude": [
+		"node_modules"
+	]
+}

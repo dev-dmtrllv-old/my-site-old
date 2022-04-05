@@ -1,0 +1,15 @@
+.container {
+	max-width: 1150px;
+	margin: 0 auto;
+	padding: 0px 15px;
+	&.no-padding {
+		padding: 0px 0px;
+	}
+	&.no-margin {
+		margin: 0px 0px;
+	}
+	&.fill {
+		max-width: unset;
+		height: unset !important;
+	}
+}

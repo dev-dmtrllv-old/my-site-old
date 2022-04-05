@@ -1,0 +1,16 @@
+.flex-box {
+	display: flex;
+	&.vertical {
+		flex-direction: column;
+		& > .flex-item {
+			width: 100%;
+		}
+	}
+
+	&.horizontal {
+		flex-direction: row;
+		& > .flex-item {
+			height: 100%;
+		}
+	}
+}
