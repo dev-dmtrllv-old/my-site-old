@@ -32,3 +32,10 @@ declare global
 
 	declare const env: Environment;
 }
+
+declare module "express-session"
+{
+    interface SessionData {
+		redirectUrls?: string[];
+    }
+}

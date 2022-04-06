@@ -1,6 +1,6 @@
 import React from "react";
 import { wait } from "utils";
-import { Page, Router, useRouter } from "./components/Router";
+import { Page, Redirect, Router, useRouter } from "./components/Router";
 
 export const App = () =>
 {
@@ -17,11 +17,15 @@ export const App = () =>
 
 	return (
 		<Router falltrough={true}>
-			<button onClick={() => routeTo("/")}>HOME</button>
+			<button onClick={() => routeTo("/home")}>HOME</button>
 			<button onClick={() => routeTo("/cv")}>CV</button>
 
-			<Page exact path="/" pagePath="home" prefetch />
+
+			<Page exact path="/home" pagePath="home" prefetch />
 			<Page exact path="/cv" pagePath="cv" prefetch />
+
+			<Redirect exact from="/" to="/home" />
+			<Redirect exact from="/home" to="/" />
 
 			{state && (
 				<>

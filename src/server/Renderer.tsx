@@ -5,6 +5,7 @@ import { App } from "app/App";
 
 import type { Server } from "./Server";
 import { AppContext } from "app/AppContext";
+import { Request, Response } from "express";
 
 const HtmlComponent: HtmlFC = ({ title, app, serverData }) =>
 {
@@ -34,15 +35,20 @@ export class Renderer
 	public readonly appContext: AppContext;
 
 	private readonly Html: HtmlFC;
+	
+	private readonly req: Request;
+	private readonly res: Response<any, Record<string, any>>;
 
-	public constructor(server: Server, path: string, title: string, htmlComponent: HtmlFC = HtmlComponent)
+	public constructor(server: Server, req: Request, res: Response, title: string, htmlComponent: HtmlFC = HtmlComponent)
 	{
 		this.server = server;
-		this.appContext = AppContext.createServerContext(App, title, path);
+		this.req = req;
+		this.res = res;
+		this.appContext = AppContext.createServerContext(App, title, req.url);
 		this.Html = htmlComponent;
 	}
 
-	private async prefetch()
+	private async prefetch(onRedirect: (url: string) => void = () => {}): Promise<any>
 	{
 		renderToStaticMarkup(
 			<this.appContext.Context>
@@ -50,21 +56,43 @@ export class Renderer
 			</this.appContext.Context>
 		);
 
-		if (this.appContext.asyncHandler.toResolveCount > 0)
+		const r = this.appContext.routerHandler.redirectInfo as any;
+		
+		if(r)
+		{
+			console.log("redirected!");
+			onRedirect(r.to);
+		}
+		else if (this.appContext.asyncHandler.toResolveCount > 0)
 		{
 			await this.appContext.asyncHandler.resolveAll();
 			await this.prefetch();
 		}
+		else
+		{
+			console.log("done");
+		}
 	}
 
-	public async render()
+	public async render(onRedirect: (url: string) => void = () => {})
 	{
-		await this.prefetch();
+		let didRedirect = false;
+
+		await this.prefetch((url) => 
+		{
+			didRedirect = true;
+			onRedirect(url);
+		});
+
+		if(didRedirect)
+			return null;
 
 		const serverData: ServerData = {
 			async: this.appContext.asyncHandler.cache,
 			appTitle: this.appContext.routerHandler.appTitle
 		};
+
+		this.appContext.isPrefetching = false;
 
 		const app = renderToString(
 			<this.appContext.Context>

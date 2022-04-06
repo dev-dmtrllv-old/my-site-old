@@ -1,26 +1,27 @@
 import express, { Express, NextFunction, Request, Response } from "express";
 import { Renderer } from "./Renderer";
+import session from "express-session";
 
 export class Server
 {
 	private static instance: Server | null = null;
-	
+
 	public static get(): Server
 	{
 		if (!this.instance)
-		throw new Error(`Server is not initialized yet!`);
+			throw new Error(`Server is not initialized yet!`);
 		return this.instance;
 	}
-	
+
 	public static async init(config: ServerConfig): Promise<Server>
 	{
 		if (this.instance)
-		throw new Error(`Server is already initialized!`);
+			throw new Error(`Server is already initialized!`);
 		this.instance = new Server(config);
 		await this.instance.onLoad();
 		return this.instance;
 	}
-	
+
 	public readonly config: ServerConfig;
 	public readonly express: Express;
 
@@ -29,6 +30,20 @@ export class Server
 	{
 		this.config = config;
 		this.express = express();
+		const ses = {
+			secret: "keyboard cat",
+			resave: true,
+			saveUninitialized: true,
+			cookie: { secure: false }
+		};
+
+		if (!env.isDev)
+		{
+			this.express.set('trust proxy', 1) // trust first proxy
+			ses.cookie.secure = true // serve secure cookies
+		}
+
+		this.express.use(session(ses));
 
 		this.express.use(express.static("app"));
 		this.express.all("/api", this.onApi);
@@ -37,7 +52,7 @@ export class Server
 
 	public async onLoad()
 	{
-		
+
 	}
 
 	private readonly onApi = (req: Request, res: Response, next: NextFunction) =>
@@ -47,9 +62,29 @@ export class Server
 
 	private readonly onRender = async (req: Request, res: Response) =>
 	{
-		const renderer = new Renderer(this, req.url, "My Site");
+		if (req.session.redirectUrls?.includes(req.url))
+		{
+			const msg = `Redirect cycle detected! ${req.session.redirectUrls.join(" -> ")} -> ${req.url}`;
+			req.session.redirectUrls = [];
+			res.send(msg);
+		}
+		else
+		{
+			const renderer = new Renderer(this, req, res, "My Site");
 
-		res.send(await renderer.render());
+			const html = await renderer.render((url) => 
+			{
+				if (!req.session.redirectUrls)
+					req.session.redirectUrls = [req.url];
+				else
+					req.session.redirectUrls.push(req.url);
+				
+				res.redirect(url);
+			});
+
+			if (html)
+				res.send(html);
+		}
 	}
 
 	public start()

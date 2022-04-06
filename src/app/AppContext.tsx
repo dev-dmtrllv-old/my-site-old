@@ -9,14 +9,17 @@ export class AppContext
 	public readonly asyncHandler: AsyncHandler;
 	public readonly routerHandler: RouterHandler;
 
-	public static createServerContext(app: React.FC<any>, appTitle: string, url: string, asyncCache: AsyncClientCache = {})
+	public set isPrefetching(val: boolean) { this.asyncHandler.isPrefetching = val; }
+	public get isPrefetching() { return this.asyncHandler.isPrefetching; }
+
+	public static createServerContext(app: React.FC<any>, appTitle: string, url: string, asyncCache: AsyncClientCache = {}, isPrefetching: boolean = true)
 	{
-		return new AppContext(app, appTitle, url, asyncCache, true);
+		return new AppContext(app, appTitle, url, asyncCache, isPrefetching);
 	}
 
 	public static createClientContext(app: React.FC<any>)
 	{
-		return new AppContext(app, window.__SERVER_DATA__.appTitle, window.location.pathname, window.__SERVER_DATA__.async);
+		return new AppContext(app, window.__SERVER_DATA__.appTitle, window.location.pathname, window.__SERVER_DATA__.async, false);
 	}
 
 	private constructor(app: React.FC<any>, appTitle: string, url: string, asyncCache: AsyncClientCache = {}, isPrefetching: boolean = env.isServer) 
@@ -37,25 +40,43 @@ export class AppContext
 		);
 	}
 
-	public readonly prefetch = async (url: string, onPrefetch: () => any = () => {}, ctx: AppContext = AppContext.createServerContext(this.app, this.routerHandler.appTitle, url, this.asyncHandler.cache)) =>
+	public readonly prefetch = async (url: string, onPrefetch: () => any = () => {}, ctx: AppContext = AppContext.createServerContext(this.app, this.routerHandler.appTitle, url, this.asyncHandler.cache, true), redirectList: string[] = []) =>
 	{
+		ctx.routerHandler.setUrl(url);
+		ctx.routerHandler.redirectInfo = null;
+
 		ReactDOMServer.renderToStaticMarkup(
 			<ctx.Context>
 				<ctx.app />
 			</ctx.Context>
 		);
 
-		if (ctx.asyncHandler.toResolveCount > 0)
+		const r = this.routerHandler.redirectInfo;
+
+		if(r)
 		{
-			await onPrefetch();
-			await ctx.asyncHandler.resolveAll();
-			await this.prefetch(url, onPrefetch, ctx);
+			if(redirectList.includes(r.to))
+				throw new Error(`Redirect cycle detected! [${redirectList.join(" -> ")}]`);
+			else
+			{
+				redirectList.push(r.from);
+				await this.prefetch(r.to, onPrefetch, ctx, redirectList);
+			}
 		}
 		else
 		{
-			this.asyncHandler.update(ctx.asyncHandler.cache);
+			if (ctx.asyncHandler.toResolveCount > 0)
+			{
+				await onPrefetch();
+				await ctx.asyncHandler.resolveAll();
+				await this.prefetch(url, onPrefetch, ctx, []);
+			}
+			else
+			{
+				this.asyncHandler.update(ctx.asyncHandler.cache);
+			}
 		}
-
+		
 		return url;
 	}
 }

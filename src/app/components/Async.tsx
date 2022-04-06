@@ -4,7 +4,7 @@ import React from "react";
 
 export class AsyncHandler extends AppContextHandler
 {
-	public readonly isPrefetching: boolean;
+	public isPrefetching: boolean;
 
 	private _toResolve: AsyncCacheState[] = [];
 
@@ -40,8 +40,12 @@ export class AsyncHandler extends AppContextHandler
 		}
 	}
 
+	public clearResolvers = () =>
+	{
+		this._toResolve = [];
+	}
 
-	public constructor(appContext: AppContext, cache: AsyncClientCache = {}, isPrefetching = env.isServer ? true : false)
+	public constructor(appContext: AppContext, cache: AsyncClientCache = {}, isPrefetching = false)
 	{
 		super(appContext);
 		this.isPrefetching = isPrefetching;

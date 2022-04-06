@@ -17,11 +17,15 @@ export class RouterHandler extends AppContextHandler
 	public url: string;
 	private _title: string = "";
 
+	public redirectInfo: RedirectProps | null = null;
+	private onRedirectHandler: () => any;
+
 	public get title() { return this._title ? `${this._title} - ${this.appTitle}` : this.appTitle; }
 
-	public constructor(appContext: AppContext, appTitle: string, url: string = "/") 
+	public constructor(appContext: AppContext, appTitle: string, url: string = "/", onRedirectHandler: () => any = () => { }) 
 	{
 		super(appContext);
+		this.onRedirectHandler = onRedirectHandler;
 		this.appTitle = appTitle;
 		this.url = url;
 		if (env.isClient)
@@ -31,6 +35,14 @@ export class RouterHandler extends AppContextHandler
 	private onPopState = () => this.setUrl(window.location.pathname, true);
 
 	private _urlUpdater: React.Dispatch<React.SetStateAction<string>> | undefined;
+
+	public updateUrlFromRedirect = (url: string) =>
+	{
+		this.url = url;
+		this.redirectInfo = null;
+		if(env.isClient)
+			this.appContext.asyncHandler.clearResolvers();
+	}
 
 	public setUrl = async (url: string, fromHistory: boolean = false) =>
 	{
@@ -104,7 +116,6 @@ export class RouterHandler extends AppContextHandler
 		else if ((!exact) && (tp.length < p.length))
 			return false;
 
-
 		for (let i = 0; i < p.length; i++)
 		{
 			const s = p[i];
@@ -147,6 +158,23 @@ export class RouterHandler extends AppContextHandler
 			this.addChangeListener(cb);
 			return () => this.removeOnChangeListeners(cb);
 		}, [cb]);
+	}
+
+	public onRedirect = (from: string, to: string, exact?: boolean) =>
+	{
+		if (this.appContext.asyncHandler.isPrefetching && this.match(from, exact))
+		{
+			this.redirectInfo = { from, to, exact };
+		}
+
+		// return React.useEffect(() => 
+		// {
+		// 	if (this.match(from, exact))
+		// 	{
+		// 		this.redirectInfo = { from, to, exact };
+				
+		// 	}
+		// }, [from, to, exact]);
 	}
 }
 
@@ -252,24 +280,20 @@ export const Page: React.FC<PageProps> = ({ pagePath, path, fallback, exact, pre
 	)
 }
 
-type PageProps = {
-	pagePath: string;
-	path: string;
-	fallback?: React.FC<any>;
-	exact?: boolean;
-	prefetch?: boolean;
+export const Redirect: React.FC<RedirectProps> = ({ from, to, exact }) =>
+{
+	const routerCtx = React.useContext(AppRouterContext);
+
+	if (!routerCtx)
+		throw new Error(``);
+	
+	// console.log({ from, to, exact });
+
+	routerCtx.handler.onRedirect(from, to, exact);
+
+	return null;
 };
 
-
-export type RouterProps = {
-	falltrough?: boolean;
-};
-
-export type RouteProps = {
-	path: string;
-	exact?: boolean;
-	component?: React.FC<any>;
-};
 
 export const useRouter = () =>
 {
@@ -302,6 +326,24 @@ export const useRouter = () =>
 	};
 }
 
+type PageProps = {
+	pagePath: string;
+	path: string;
+	fallback?: React.FC<any>;
+	exact?: boolean;
+	prefetch?: boolean;
+};
+
+type RouterProps = {
+	falltrough?: boolean;
+};
+
+type RouteProps = {
+	path: string;
+	exact?: boolean;
+	component?: React.FC<any>;
+};
+
 type RouteParams = { [key: string]: string };
 
 type RouteContextType = {
@@ -320,3 +362,9 @@ type RouterContextType = {
 };
 
 type RouteChangeListener = (event: { url: string, prev: string, isLoading: boolean }) => any;
+
+type RedirectProps = {
+	from: string;
+	to: string;
+	exact?: boolean;
+};
