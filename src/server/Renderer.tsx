@@ -60,17 +60,12 @@ export class Renderer
 		
 		if(r)
 		{
-			console.log("redirected!");
 			onRedirect(r.to);
 		}
 		else if (this.appContext.asyncHandler.toResolveCount > 0)
 		{
 			await this.appContext.asyncHandler.resolveAll();
 			await this.prefetch();
-		}
-		else
-		{
-			console.log("done");
 		}
 	}
 

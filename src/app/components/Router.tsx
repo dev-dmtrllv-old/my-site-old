@@ -40,21 +40,32 @@ export class RouterHandler extends AppContextHandler
 	{
 		this.url = url;
 		this.redirectInfo = null;
-		if(env.isClient)
+		if (env.isClient)
 			this.appContext.asyncHandler.clearResolvers();
 	}
 
-	public setUrl = async (url: string, fromHistory: boolean = false) =>
+	public setUrl = async (url: string, fromHistory: boolean = false, ID: number = this.updaterCounter++) =>
 	{
-		const ID = this.updaterCounter++;
-		this.activeUpdater = ID;
+		const e: RouteEvent = { url, prev: this.url, isLoading: true, isCanceled: false };
 
-		const prevURL = this.url;
+		if (this.activeUpdater !== undefined && url === this.url)
+		{
+			console.log("canceled and move back to default url", this.url, url);
+			this.activeUpdater = undefined;
+
+			e.isLoading = false;
+			e.isCanceled = true;
+
+			for (const cb of this.routeListeners)
+				await cb(e);
+
+			return;
+		}
+
+		this.activeUpdater = ID;
 
 		if (this.url !== url)
 		{
-			const e = { url, prev: prevURL, isLoading: true };
-
 			const isCanceled = () =>
 			{
 				if (this.activeUpdater !== ID)
@@ -65,43 +76,70 @@ export class RouterHandler extends AppContextHandler
 				return false;
 			}
 
-			let didPrefetch = false;
-
-			url = await this.appContext.prefetch(url, async () => 
+			try
 			{
-				if (!didPrefetch)
+				let didPrefetch = false;
+
+				if(isCanceled())
 				{
-					didPrefetch = true;
-					for (const cb of this.routeListeners)
-					{
-						await cb(e);
-						if (isCanceled())
-							return;
-					}
-				}
-			});
-
-			if (isCanceled())
-				return;
-
-			this.url = url;
-
-			if (!fromHistory)
-			{
-				window.history.pushState(null, "", this.url);
-				window.history.replaceState(null, "", url);
-				document.title = this.appTitle;
-			}
-
-			this._urlUpdater && this._urlUpdater(url);
-
-			e.isLoading = false;
-
-			for (const cb of this.routeListeners)
-			{
-				await cb(e);
-				if (isCanceled())
+					this.activeUpdater = undefined;
 					return;
+				}
+
+				const redirectURL = await this.appContext.prefetch(url, async () => 
+				{
+					if (!didPrefetch && !isCanceled())
+					{
+						didPrefetch = true;
+						e.isLoading = true;
+						for (const cb of this.routeListeners)
+							await cb(e);
+					}
+				});
+
+				if (url != redirectURL)
+				{
+					await this.setUrl(redirectURL, fromHistory, ID);
+				}
+				else
+				{
+					if (isCanceled())
+					{
+						this.activeUpdater = undefined;
+						return;
+					}
+
+					url = redirectURL;
+
+					if (!fromHistory)
+					{
+						window.history.pushState(null, "", this.url);
+						window.history.replaceState(null, "", url);
+						document.title = this.appTitle;
+					}
+
+					this.url = url;
+
+					this._urlUpdater && this._urlUpdater(url);
+
+					e.isLoading = false;
+
+					for (const cb of this.routeListeners)
+						await cb(e);
+				}
+
+				this.activeUpdater = undefined;
+			}
+			catch (err)
+			{
+				this.activeUpdater = undefined;
+				e.isLoading = false;
+				e.isCanceled = true;
+
+				for (const cb of this.routeListeners)
+					await cb(e);
+
+				console.warn(err);
 			}
 		}
 	}
@@ -167,14 +205,11 @@ export class RouterHandler extends AppContextHandler
 			this.redirectInfo = { from, to, exact };
 		}
 
-		// return React.useEffect(() => 
-		// {
-		// 	if (this.match(from, exact))
-		// 	{
-		// 		this.redirectInfo = { from, to, exact };
-				
-		// 	}
-		// }, [from, to, exact]);
+		return React.useEffect(() => 
+		{
+			if (this.match(from, exact))
+				this.setUrl(to);
+		}, [from, to, exact]);
 	}
 }
 
@@ -286,7 +321,7 @@ export const Redirect: React.FC<RedirectProps> = ({ from, to, exact }) =>
 
 	if (!routerCtx)
 		throw new Error(``);
-	
+
 	// console.log({ from, to, exact });
 
 	routerCtx.handler.onRedirect(from, to, exact);
@@ -361,7 +396,9 @@ type RouterContextType = {
 	hasMatched: boolean;
 };
 
-type RouteChangeListener = (event: { url: string, prev: string, isLoading: boolean }) => any;
+type RouteEvent = { url: string, prev: string, isLoading: boolean, isCanceled: boolean };
+
+type RouteChangeListener = (event: Readonly<RouteEvent>) => any;
 
 type RedirectProps = {
 	from: string;

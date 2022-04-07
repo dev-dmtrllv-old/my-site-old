@@ -12,6 +12,10 @@ if (!rootElement)
 
 const appContext = AppContext.createClientContext(App);
 
-await appContext.prefetch(window.location.pathname);
+let url = window.location.pathname;
+
+url = await appContext.prefetch(url);
+
+appContext.routerHandler.updateUrlFromRedirect(url);
 
 createRoot(rootElement).render(<appContext.Context><App /></appContext.Context>);

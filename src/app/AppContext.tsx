@@ -1,5 +1,5 @@
 import React from "react";
-import ReactDOMServer from "react-dom/server";
+import ReactDOMServer, { renderToStaticMarkup } from "react-dom/server";
 import { AsyncClientCache, AsyncContext, AsyncHandler } from "./components/Async";
 import { AppRouter, RouterHandler } from "./components/Router";
 
@@ -40,43 +40,39 @@ export class AppContext
 		);
 	}
 
-	public readonly prefetch = async (url: string, onPrefetch: () => any = () => {}, ctx: AppContext = AppContext.createServerContext(this.app, this.routerHandler.appTitle, url, this.asyncHandler.cache, true), redirectList: string[] = []) =>
+	public readonly prefetch = async (url: string, onPrefetch: () => any = () => { }, ctx: AppContext = AppContext.createServerContext(this.app, this.routerHandler.appTitle, url, this.asyncHandler.cache, true), redirectList: string[] = []): Promise<string> =>
 	{
-		ctx.routerHandler.setUrl(url);
-		ctx.routerHandler.redirectInfo = null;
-
-		ReactDOMServer.renderToStaticMarkup(
+		renderToStaticMarkup(
 			<ctx.Context>
 				<ctx.app />
 			</ctx.Context>
 		);
 
-		const r = this.routerHandler.redirectInfo;
+		const r = ctx.routerHandler.redirectInfo as any;
 
-		if(r)
+		if (r)
 		{
-			if(redirectList.includes(r.to))
+			if (redirectList.includes(r.from))
+			{
 				throw new Error(`Redirect cycle detected! [${redirectList.join(" -> ")}]`);
+			}
 			else
 			{
 				redirectList.push(r.from);
-				await this.prefetch(r.to, onPrefetch, ctx, redirectList);
+				ctx.routerHandler.updateUrlFromRedirect(r.to);
+				return await this.prefetch(r.to, onPrefetch, ctx, redirectList);
 			}
+		}
+		else if (ctx.asyncHandler.toResolveCount > 0)
+		{
+			await onPrefetch();
+			await ctx.asyncHandler.resolveAll();
+			return await this.prefetch(url, onPrefetch, ctx);
 		}
 		else
 		{
-			if (ctx.asyncHandler.toResolveCount > 0)
-			{
-				await onPrefetch();
-				await ctx.asyncHandler.resolveAll();
-				await this.prefetch(url, onPrefetch, ctx, []);
-			}
-			else
-			{
-				this.asyncHandler.update(ctx.asyncHandler.cache);
-			}
+			this.asyncHandler.update(ctx.asyncHandler.cache);
+			return url;
 		}
-		
-		return url;
 	}
 }
