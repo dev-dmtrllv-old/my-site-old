@@ -1,13 +1,13 @@
 import React from "react";
 import { wait } from "utils";
 import { Dynamic } from "./components/Dynamic";
-import { Page, Redirect, Router, useRouter } from "./components/Router";
+import { Link, Page, Redirect, Router, useRouter } from "./components/Router";
 
 export const App = () =>
 {
 	const [state, setIsLoading] = React.useState<{ from: string, to: string } | null>(null);
 
-	const { routeTo, onRouteChange } = useRouter();
+	const { onRouteChange } = useRouter();
 
 	onRouteChange(async e => 
 	{
@@ -18,9 +18,11 @@ export const App = () =>
 
 	return (
 		<Router falltrough={true}>
-			<button onClick={() => routeTo("/")}>Test /</button>
-			<button onClick={() => routeTo("/home")}>HOME</button>
-			<button onClick={() => routeTo("/cv")}>CV</button>
+			<Link to="/" exact>/</Link>
+			<br/>
+			<Link to="/home" exact>/home</Link>
+			<br/>
+			<Link to="/cv" exact>/cv</Link>
 
 			<Page exact path="/home" pagePath="home" prefetch />
 			<Page exact path="/cv" pagePath="cv" prefetch />
@@ -29,8 +31,6 @@ export const App = () =>
 
 			<Dynamic path="./pages/test" importer={() => import(`./pages/test`)} prefetch/>
 			
-			<div>hi</div>
-
 			{state && (
 				<>
 					<h1>Loading url {state.to}</h1>

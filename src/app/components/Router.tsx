@@ -75,9 +75,9 @@ export class RouterHandler extends AppContextHandler
 					return;
 				}
 
-				const redirectURL = await this.appContext.prefetch(url, async (url) => 
+				const redirectURL = await this.appContext.prefetch(url, async (_url) => 
 				{
-					if ((url !== this.url) && !didPrefetch && !isCanceled())
+					if ((url === _url) && (_url !== this.url) && !didPrefetch && !isCanceled())
 					{
 						didPrefetch = true;
 						e.isLoading = true;
@@ -275,6 +275,29 @@ export const Route: React.FC<RouteProps> = ({ children, component, path, exact =
 	);
 }
 
+export const Link: React.FC<LinkProps> = ({ className = "", activeName = "active", exact, children, onClick, to }) =>
+{
+	const ctx = React.useContext(AppRouterContext);
+
+	const onClickHandler = (e: React.MouseEvent) =>
+	{
+		onClick && onClick(e);
+		if (!e.isDefaultPrevented())
+		{
+			ctx?.handler.setUrl(to);
+			e.preventDefault();
+		}
+	}
+
+	const isActive = ctx?.handler.match(to, exact);
+
+	return (
+		<a href={to} className={className + (isActive ? activeName : "")} onClick={onClickHandler}>
+			{children}
+		</a>
+	);
+}
+
 export const Page: React.FC<PageProps> = ({ pagePath, path, fallback, exact, prefetch, onLoad }) =>
 {
 	return (
@@ -372,4 +395,12 @@ type RedirectProps = {
 	from: string;
 	to: string;
 	exact?: boolean;
+};
+
+type LinkProps = {
+	activeName?: string;
+	exact?: boolean;
+	onClick?: (e: React.MouseEvent) => any;
+	to: string;
+	className?: string;
 };
