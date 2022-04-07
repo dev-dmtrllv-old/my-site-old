@@ -6,8 +6,9 @@ import { App } from "app/App";
 import type { Server } from "./Server";
 import { AppContext } from "app/AppContext";
 import { Request, Response } from "express";
+import { DYNAMIC_KEY } from "app/components/Dynamic";
 
-const HtmlComponent: HtmlFC = ({ title, app, serverData }) =>
+const HtmlComponent: HtmlFC = ({ title, app, serverData, scripts, styles }) =>
 {
 	const serverDataScript = `window.__SERVER_DATA__ = ${JSON.stringify(serverData)}; document.getElementById("__SERVER_DATA__").remove();`;
 	return (
@@ -15,15 +16,13 @@ const HtmlComponent: HtmlFC = ({ title, app, serverData }) =>
 			<head>
 				<meta charSet="utf-8" />
 				<title>{title}</title>
-				<link href="/css/main.bundle.css" rel="stylesheet" />
+				{styles.map((s, k) => <link href={s} key={k} rel="stylesheet" />)}
 				<link rel="icon" href="data:;base64,iVBORw0KGgo=" />
 			</head>
 			<body cz-shortcut-listen="true">
 				<div id="root" dangerouslySetInnerHTML={{ __html: app }}></div>
-				<script src="/js/runtime.bundle.js"></script>
-				<script src="/js/vendors.bundle.js"></script>
 				<script id="__SERVER_DATA__" dangerouslySetInnerHTML={{ __html: serverDataScript }}></script>
-				<script src="/js/main.bundle.js"></script>
+				{scripts.map((s, k) => <script key={k} src={s} />)}
 			</body>
 		</html>
 	);
@@ -35,7 +34,7 @@ export class Renderer
 	public readonly appContext: AppContext;
 
 	private readonly Html: HtmlFC;
-	
+
 	private readonly req: Request;
 	private readonly res: Response<any, Record<string, any>>;
 
@@ -48,7 +47,7 @@ export class Renderer
 		this.Html = htmlComponent;
 	}
 
-	private async prefetch(onRedirect: (url: string) => void = () => {}): Promise<any>
+	private async prefetch(onRedirect: (url: string) => void = () => { }): Promise<any>
 	{
 		renderToStaticMarkup(
 			<this.appContext.Context>
@@ -57,8 +56,8 @@ export class Renderer
 		);
 
 		const r = this.appContext.routerHandler.redirectInfo as any;
-		
-		if(r)
+
+		if (r)
 		{
 			onRedirect(r.to);
 		}
@@ -69,7 +68,7 @@ export class Renderer
 		}
 	}
 
-	public async render(onRedirect: (url: string) => void = () => {})
+	public async render(onRedirect: (url: string) => void = () => { })
 	{
 		let didRedirect = false;
 
@@ -79,11 +78,33 @@ export class Renderer
 			onRedirect(url);
 		});
 
-		if(didRedirect)
+		if (didRedirect)
 			return null;
 
+
+		const c = this.appContext.asyncHandler.cache;
+
+		const dynamicImports: string[] = [];
+
+		Object.keys(c).forEach(s => 
+		{
+			if (s.startsWith(DYNAMIC_KEY))
+			{
+
+				let p = s.replace(DYNAMIC_KEY, "");
+
+				if (p.startsWith("/"))
+					p = "." + p;
+				else if (!p.startsWith("."))
+					p = "./" + p;
+
+				dynamicImports.push(s);
+				delete c[s];
+			}
+		});
+
 		const serverData: ServerData = {
-			async: this.appContext.asyncHandler.cache,
+			async: c,
 			appTitle: this.appContext.routerHandler.appTitle
 		};
 
@@ -95,7 +116,10 @@ export class Renderer
 			</this.appContext.Context>
 		);
 
-		return `<!DOCTYPE html>${renderToStaticMarkup(<this.Html app={app} title={this.appContext.routerHandler.title} serverData={serverData} />)}`;
+		const scripts = this.server.manifest.get(dynamicImports, "js");
+		const styles = this.server.manifest.get(dynamicImports, "css");
+
+		return `<!DOCTYPE html>${renderToStaticMarkup(<this.Html app={app} title={this.appContext.routerHandler.title} serverData={serverData} scripts={scripts} styles={styles} />)}`;
 	}
 }
 
@@ -105,4 +129,6 @@ export type HtmlProps = {
 	title: string;
 	app: string;
 	serverData: ServerData;
+	scripts: string[];
+	styles: string[];
 };

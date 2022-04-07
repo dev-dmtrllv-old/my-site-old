@@ -18,6 +18,9 @@ module.exports = (options = {}) =>
 		entry
 	} = options;
 
+	if (!splitChunks)
+		plugins.push(new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }));
+
 	return {
 		name: isServer ? "server" : "app",
 		target: isServer ? "node" : "web",
@@ -46,7 +49,7 @@ module.exports = (options = {}) =>
 		},
 		output: {
 			filename: `${isServer ? "" : "js/"}[name].bundle.js`,
-			chunkFilename: `${isServer ? "" : "js/"}[name].[chunkhash].chunk.js`,
+			chunkFilename: `${isServer ? "" : "js/"}[name]${dev ? "" : ".[chunkhash]"}.chunk.js`,
 			path: resolve(output),
 			publicPath: "/",
 			clean
@@ -58,7 +61,7 @@ module.exports = (options = {}) =>
 				isClient: !isServer
 			}
 		})],
-		optimization: splitChunks ? {
+		optimization: (splitChunks && !isServer) ? {
 			runtimeChunk: "single",
 			splitChunks: {
 				chunks: "all",

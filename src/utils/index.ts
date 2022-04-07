@@ -1,7 +1,6 @@
 import * as react from "./react";
 import * as string from "./string";
 import * as object from "./object";
-import * as path from "./path";
 
 export const wait = (time: number, target: "ms" | "s" | "min" = "ms") => new Promise<NodeJS.Timeout>((resolve) => 
 {

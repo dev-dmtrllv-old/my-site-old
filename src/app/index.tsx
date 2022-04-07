@@ -1,4 +1,4 @@
-import { createRoot } from "react-dom/client";
+import { hydrateRoot } from "react-dom/client";
 import React from "react";
 import { App } from "./App";
 import { AppContext } from "./AppContext";
@@ -18,7 +18,7 @@ url = await appContext.prefetch(url);
 
 appContext.routerHandler.updateUrlFromRedirect(url);
 
-createRoot(rootElement).render(<appContext.Context><App /></appContext.Context>);
+hydrateRoot(rootElement, <appContext.Context><App /></appContext.Context>);
 
 if (env.isDev)
 	(await import("socket.io-client")).io("http://localhost:8081").on("reload", () => window.location.reload())

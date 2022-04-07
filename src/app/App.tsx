@@ -1,5 +1,6 @@
 import React from "react";
 import { wait } from "utils";
+import { Dynamic } from "./components/Dynamic";
 import { Page, Redirect, Router, useRouter } from "./components/Router";
 
 export const App = () =>
@@ -12,7 +13,7 @@ export const App = () =>
 	{
 		setIsLoading(e.isLoading ? { from: e.prev, to: e.url } : null);
 		if (e.isLoading)
-			await wait(150);
+			await wait(1500);
 	});
 
 	return (
@@ -25,6 +26,10 @@ export const App = () =>
 			<Page exact path="/cv" pagePath="cv" prefetch />
 
 			<Redirect exact from="/" to="/home" />
+
+			<Dynamic path="./pages/test" importer={() => import(`./pages/test`)} prefetch/>
+			
+			<div>hi</div>
 
 			{state && (
 				<>

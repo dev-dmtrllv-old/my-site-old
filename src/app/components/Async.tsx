@@ -12,19 +12,32 @@ export class AsyncHandler extends AppContextHandler
 
 	private _cache: AsyncCache = {};
 
+	public clearCache = (id?: string) =>
+	{
+		if (id)
+		{
+			Object.keys(this._cache).forEach(k => 
+			{
+				if(k.startsWith(id))
+					delete this._cache[k];
+			});
+		}
+		else
+		{
+			this._cache = {};
+		}
+	}
+
 	public get cache()
 	{
 		const c: AsyncClientCache = {};
 
 		for (const key in this._cache)
 		{
-			if (!env.isServer && !key.startsWith("Page"))
+			const { fn, ...rest } = this._cache[key];
+			if (!rest.state.isLoading)
 			{
-				const { fn, ...rest } = this._cache[key];
-				if (!rest.state.isLoading)
-				{
-					c[key] = rest;
-				}
+				c[key] = rest;
 			}
 		}
 

@@ -11,5 +11,6 @@ module.exports = (dev = true) => baseConfig({
 		},
 	],
 	splitChunks: false,
-	clean: false
+	clean: false,
+	plugins: []
 });

@@ -3,6 +3,8 @@ const CopyPlugin = require("copy-webpack-plugin");
 
 const { resolve } = require("./paths");
 const baseConfig = require("./webpack.base");
+const ManifestPlugin = require("./ManifestPlugin");
+const { writeFileSync } = require("fs");
 
 module.exports = (dev = true) => baseConfig({
 	name: "app",
@@ -43,8 +45,12 @@ module.exports = (dev = true) => baseConfig({
 		}),
 		new CopyPlugin({
 			patterns: [
-				{ from: resolve("src","assets"), to: resolve("dist", "app", "assets") },
+				{
+					from: resolve("src","assets"),
+					to: resolve("dist", "app", "assets")
+				},
 			],
 		}),
+		new ManifestPlugin((manifest) => writeFileSync(resolve("dist", "manifest.json"), JSON.stringify(manifest, null, dev ? 4 : 0), "utf-8"))
 	]
 });

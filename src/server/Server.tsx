@@ -1,6 +1,7 @@
 import express, { Express, NextFunction, Request, Response } from "express";
 import { Renderer } from "./Renderer";
 import session from "express-session";
+import { Manifest } from "./Manifest";
 
 export class Server
 {
@@ -24,11 +25,12 @@ export class Server
 
 	public readonly config: ServerConfig;
 	public readonly express: Express;
-
+	public readonly manifest: Manifest;
 
 	private constructor(config: ServerConfig)
 	{
 		this.config = config;
+		this.manifest = new Manifest();
 		this.express = express();
 		const ses = {
 			secret: "keyboard cat",
@@ -83,7 +85,10 @@ export class Server
 			});
 
 			if (html)
+			{
+				req.session.redirectUrls = [];
 				res.send(html);
+			}
 		}
 	}
 

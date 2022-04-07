@@ -2,7 +2,7 @@ import { AppContext } from "app/AppContext";
 import { AppContextHandler } from "app/AppContextHandler";
 import React from "react";
 import * as Path from "utils/path";
-import { Async } from "./Async";
+import { Dynamic } from "./Dynamic";
 
 export class RouterHandler extends AppContextHandler
 {
@@ -18,14 +18,12 @@ export class RouterHandler extends AppContextHandler
 	private _title: string = "";
 
 	public redirectInfo: RedirectProps | null = null;
-	private onRedirectHandler: () => any;
 
 	public get title() { return this._title ? `${this._title} - ${this.appTitle}` : this.appTitle; }
 
-	public constructor(appContext: AppContext, appTitle: string, url: string = "/", onRedirectHandler: () => any = () => { }) 
+	public constructor(appContext: AppContext, appTitle: string, url: string = "/") 
 	{
 		super(appContext);
-		this.onRedirectHandler = onRedirectHandler;
 		this.appTitle = appTitle;
 		this.url = url;
 		if (env.isClient)
@@ -50,7 +48,6 @@ export class RouterHandler extends AppContextHandler
 
 		if (this.activeUpdater !== undefined && url === this.url)
 		{
-			console.log("canceled and move back to default url", this.url, url);
 			this.activeUpdater = undefined;
 
 			e.isLoading = false;
@@ -66,35 +63,29 @@ export class RouterHandler extends AppContextHandler
 
 		if (this.url !== url)
 		{
-			const isCanceled = () =>
-			{
-				if (this.activeUpdater !== ID)
-				{
-					env.isDev && console.warn(`${url} canceled!`);
-					return true;
-				}
-				return false;
-			}
+			const isCanceled = () => this.activeUpdater !== ID;
 
 			try
 			{
 				let didPrefetch = false;
 
-				if(isCanceled())
+				if (isCanceled())
 				{
 					this.activeUpdater = undefined;
 					return;
 				}
 
-				const redirectURL = await this.appContext.prefetch(url, async () => 
+				const redirectURL = await this.appContext.prefetch(url, async (url) => 
 				{
-					if (!didPrefetch && !isCanceled())
+					if ((url !== this.url) && !didPrefetch && !isCanceled())
 					{
 						didPrefetch = true;
 						e.isLoading = true;
 						for (const cb of this.routeListeners)
 							await cb(e);
 					}
+
+					return !isCanceled();
 				});
 
 				if (url != redirectURL)
@@ -276,6 +267,7 @@ export const Route: React.FC<RouteProps> = ({ children, component, path, exact =
 	else
 		routerContext.hasMatched = true;
 
+
 	return (
 		<RouteContext.Provider value={{ url, params }}>
 			{component ? React.createElement(component, { children }) : children}
@@ -283,36 +275,13 @@ export const Route: React.FC<RouteProps> = ({ children, component, path, exact =
 	);
 }
 
-export const Page: React.FC<PageProps> = ({ pagePath, path, fallback, exact, prefetch }) =>
+export const Page: React.FC<PageProps> = ({ pagePath, path, fallback, exact, prefetch, onLoad }) =>
 {
 	return (
 		<Route path={path} exact={exact}>
-			<Async id={`Page/${pagePath}`} fn={() => import(`../pages/${pagePath}.tsx`)} prefetch={prefetch}>
-				{({ isLoading, data, error }) => 
-				{
-					if (error)
-					{
-						console.error(error);
-						return null;
-					}
-					else if (isLoading)
-					{
-						return fallback ? React.createElement(fallback) : null;
-					}
-					else if (!data.default)
-					{
-						return null;
-					}
-					else
-					{
-						return (
-							<data.default />
-						);
-					}
-				}}
-			</Async>
+			<Dynamic importer={() => import(`../pages/${pagePath}.tsx`)} prefetch={prefetch} path={`/${pagePath}`} fallback={fallback} load={onLoad} />
 		</Route>
-	)
+	);
 }
 
 export const Redirect: React.FC<RedirectProps> = ({ from, to, exact }) =>
@@ -321,8 +290,6 @@ export const Redirect: React.FC<RedirectProps> = ({ from, to, exact }) =>
 
 	if (!routerCtx)
 		throw new Error(``);
-
-	// console.log({ from, to, exact });
 
 	routerCtx.handler.onRedirect(from, to, exact);
 
@@ -365,6 +332,7 @@ type PageProps = {
 	pagePath: string;
 	path: string;
 	fallback?: React.FC<any>;
+	onLoad?: React.FC<any>;
 	exact?: boolean;
 	prefetch?: boolean;
 };
