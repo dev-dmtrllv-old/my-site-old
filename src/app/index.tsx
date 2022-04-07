@@ -19,3 +19,6 @@ url = await appContext.prefetch(url);
 appContext.routerHandler.updateUrlFromRedirect(url);
 
 createRoot(rootElement).render(<appContext.Context><App /></appContext.Context>);
+
+if (env.isDev)
+	(await import("socket.io-client")).io("http://localhost:8081").on("reload", () => window.location.reload())

@@ -5,7 +5,7 @@ export default () =>
 {
 	return (
 		<View>
-			Home
+			Home :D
 		</View>
 	);
 }

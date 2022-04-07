@@ -12,7 +12,7 @@ export const App = () =>
 	{
 		setIsLoading(e.isLoading ? { from: e.prev, to: e.url } : null);
 		if (e.isLoading)
-			await wait(800);
+			await wait(150);
 	});
 
 	return (
