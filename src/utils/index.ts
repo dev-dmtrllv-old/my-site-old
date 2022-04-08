@@ -1,6 +1,8 @@
-import * as react from "./react";
-import * as string from "./string";
-import * as object from "./object";
+export * as react from "./react";
+export * as string from "./string";
+export * as object from "./object";
+export * as math from "./math";
+export * as path from "./path";
 
 export const wait = (time: number, target: "ms" | "s" | "min" = "ms") => new Promise<NodeJS.Timeout>((resolve) => 
 {
@@ -16,10 +18,3 @@ export const isSubClass = (A: any, B: any, matchSameClass: boolean = false) =>
 }
 
 export const exec = <T = any>(fn: () => T) => fn();
-
-export
-{
-	react,
-	string,
-	object,
-}

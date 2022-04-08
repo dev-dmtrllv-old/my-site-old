@@ -25,7 +25,7 @@ export class RouterHandler extends AppContextHandler
 	{
 		super(appContext);
 		this.appTitle = appTitle;
-		this.url = url;
+		this.url = url.split("?")[0];
 		if (env.isClient)
 			window.addEventListener("popstate", this.onPopState);
 	}
@@ -36,6 +36,7 @@ export class RouterHandler extends AppContextHandler
 
 	public updateUrlFromRedirect = (url: string) =>
 	{
+		url = url.split("?")[0];
 		this.url = url;
 		this.redirectInfo = null;
 		if (env.isClient)
@@ -44,6 +45,8 @@ export class RouterHandler extends AppContextHandler
 
 	public setUrl = async (url: string, fromHistory: boolean = false, ID: number = this.updaterCounter++) =>
 	{
+		url = url.split("?")[0];
+
 		const e: RouteEvent = { url, prev: this.url, isLoading: true, isCanceled: false };
 
 		if (this.activeUpdater !== undefined && url === this.url)
@@ -137,6 +140,8 @@ export class RouterHandler extends AppContextHandler
 
 	public match(url: string, exact?: boolean, params: { [key: string]: string } = {})
 	{
+		url = url.split("?")[0];
+
 		const tp = this.url.split("/").filter(s => !!s);
 		const p = url.split("/").filter(s => !!s);
 

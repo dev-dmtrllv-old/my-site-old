@@ -19,3 +19,5 @@ export const join = (...parts: string[]) =>
 
 	return (parts[0].startsWith("/") ? "/" : "") + pathParts.join("/");
 }
+
+export const toURLQuery = (o: ObjectMap<any>) => Object.keys(o).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(o[k])}`).join("&");

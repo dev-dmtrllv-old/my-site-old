@@ -49,6 +49,9 @@
 			],
 			"stores/*": [
 				"app/stores/*"
+			],
+			"api/*": [
+				"server/api/*"
 			]
 		}
 	},

@@ -2,6 +2,8 @@ import express, { Express, NextFunction, Request, Response } from "express";
 import { Renderer } from "./Renderer";
 import session from "express-session";
 import { Manifest } from "./Manifest";
+import { apiRoutes } from "./api";
+import { FlatApi, Api } from "./api/Api";
 
 export class Server
 {
@@ -26,12 +28,18 @@ export class Server
 	public readonly config: ServerConfig;
 	public readonly express: Express;
 	public readonly manifest: Manifest;
+	public readonly api: FlatApi = {};
+	public readonly clientApiManifest: string;
 
 	private constructor(config: ServerConfig)
 	{
 		this.config = config;
 		this.manifest = new Manifest();
 		this.express = express();
+
+		this.api = Api.flatten(apiRoutes);
+		this.clientApiManifest = Api.createManifest(this.api);
+		
 		const ses = {
 			secret: "keyboard cat",
 			resave: true,
@@ -48,7 +56,7 @@ export class Server
 		this.express.use(session(ses));
 
 		this.express.use(express.static("app"));
-		this.express.all("/api", this.onApi);
+		this.express.all("/api/*", this.onApi);
 		this.express.get("*", this.onRender);
 	}
 
@@ -59,7 +67,33 @@ export class Server
 
 	private readonly onApi = (req: Request, res: Response, next: NextFunction) =>
 	{
-		next();
+		const [url, query] = req.url.split("?")
+		const Api = this.api[url];
+		if(Api)
+		{
+			const api: any = new Api(req, res);
+			const m: any = req.method.toLowerCase();
+			
+			let data: any;
+			let error: any;
+
+			try {
+				data = api[m](m === "get" ? req.query : req.params);
+			}
+			catch(e)
+			{
+				error = (e as Error).message;
+			}
+
+			res.json({
+				data,
+				error 
+			});
+		}
+		else
+		{
+			next();
+		}
 	}
 
 	private readonly onRender = async (req: Request, res: Response) =>

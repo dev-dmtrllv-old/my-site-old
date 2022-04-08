@@ -105,7 +105,8 @@ export class Renderer
 
 		const serverData: ServerData = {
 			async: c,
-			appTitle: this.appContext.routerHandler.appTitle
+			appTitle: this.appContext.routerHandler.appTitle,
+			api: this.server.clientApiManifest
 		};
 
 		this.appContext.isPrefetching = false;

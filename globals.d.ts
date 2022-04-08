@@ -16,12 +16,16 @@ declare global
 	declare type ServerData = {
 		async: AsyncClientCache;
 		appTitle: string;
+		api: string;
 	};
 
 	interface Window
 	{
 		__SERVER_DATA__: ServerData;
 	}
+
+	declare type RequiredKeys<T> = { [K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T];
+	declare type OptionalKeys<T> = { [K in keyof T]-?: {} extends Pick<T, K> ? K : never }[keyof T];
 
 	declare type ObjectMap<T = any> = { [key: string]: T };
 	declare type Transform<T, Type> = { [P in keyof T]: Type };
