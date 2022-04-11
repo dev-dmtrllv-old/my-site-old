@@ -1,6 +1,6 @@
-import type { AppContext } from "app/AppContext";
-import { AppContextHandler } from "app/AppContextHandler";
+import type { AppContext } from "lib/AppContext";
 import React from "react";
+import { AppContextHandler } from "./AppContextHandler";
 
 export class AsyncHandler extends AppContextHandler
 {

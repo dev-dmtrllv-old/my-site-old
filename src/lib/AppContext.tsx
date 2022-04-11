@@ -1,7 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { AsyncClientCache, AsyncContext, AsyncHandler } from "./components/Async";
-import { AppRouter, RouterHandler } from "./components/Router";
+import { AsyncClientCache, AsyncContext, AsyncHandler } from "./Async";
+import { AppRouter, RouterHandler } from "./Router";
 
 export class AppContext
 {

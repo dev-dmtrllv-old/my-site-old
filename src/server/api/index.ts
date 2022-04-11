@@ -1,15 +1,8 @@
-import { Api, ClientApi } from "./Api";
-import { Test } from "./Test";
+import { Api, ClientApi } from "lib/Api";
+import { Users } from "./Users";
 
 export const apiRoutes = Api.createRoutes({
-	test: Test,
-	wop: {
-		wip: {
-			test: Test
-		}
-	}
+	users: Users
 });
 
 export type ClientApiType = ClientApi<typeof apiRoutes>;
-
-export { Api };

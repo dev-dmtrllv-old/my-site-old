@@ -1,12 +1,13 @@
-import { exec } from "utils";
-import { Server } from "./Server";
+import { Server, ServerConfig } from "lib/Server";
+import { apiRoutes } from "./api";
 
-exec(async () => 
+const server = await Server.init(class extends Server
 {
-	const server = await Server.init({
-		host: "127.0.0.1",
-		port: 8080
-	});
-
-	server.start();
+	protected onConfigure(config: ServerConfig): void
+	{
+		config.api = apiRoutes;
+		config.session.secret = "Some Secrets";
+	}
 });
+
+server.start();

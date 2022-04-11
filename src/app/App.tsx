@@ -1,7 +1,7 @@
 import React from "react";
 import { wait } from "utils";
-import { Dynamic } from "./components/Dynamic";
-import { Link, Page, Redirect, Router, useRouter } from "./components/Router";
+import { Dynamic } from "lib/Dynamic";
+import { Link, Page, Redirect, Router, useRouter } from "lib/Router";
 
 export const App = () =>
 {

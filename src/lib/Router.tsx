@@ -1,7 +1,7 @@
-import { AppContext } from "app/AppContext";
-import { AppContextHandler } from "app/AppContextHandler";
+import { AppContext } from "lib/AppContext";
 import React from "react";
 import * as Path from "utils/path";
+import { AppContextHandler } from "./AppContextHandler";
 import { Dynamic } from "./Dynamic";
 
 export class RouterHandler extends AppContextHandler
@@ -307,7 +307,7 @@ export const Page: React.FC<PageProps> = ({ pagePath, path, fallback, exact, pre
 {
 	return (
 		<Route path={path} exact={exact}>
-			<Dynamic importer={() => import(`../pages/${pagePath}.tsx`)} prefetch={prefetch} path={`/${pagePath}`} fallback={fallback} load={onLoad} />
+			<Dynamic importer={() => import(`../app/pages/${pagePath}.tsx`)} prefetch={prefetch} path={`/${pagePath}`} fallback={fallback} load={onLoad} />
 		</Route>
 	);
 }

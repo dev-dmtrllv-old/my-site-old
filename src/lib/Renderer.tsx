@@ -4,9 +4,9 @@ import { renderToStaticMarkup, renderToString } from "react-dom/server";
 import { App } from "app/App";
 
 import type { Server } from "./Server";
-import { AppContext } from "app/AppContext";
+import { AppContext } from "lib/AppContext";
 import { Request, Response } from "express";
-import { DYNAMIC_KEY } from "app/components/Dynamic";
+import { DYNAMIC_KEY } from "lib/Dynamic";
 
 const HtmlComponent: HtmlFC = ({ title, app, serverData, scripts, styles }) =>
 {
@@ -47,7 +47,7 @@ export class Renderer
 		this.Html = htmlComponent;
 	}
 
-	private async prefetch(onRedirect: (url: string) => void = () => { }): Promise<any>
+	protected async prefetch(onRedirect: (url: string) => void = () => { }): Promise<any>
 	{
 		renderToStaticMarkup(
 			<this.appContext.Context>

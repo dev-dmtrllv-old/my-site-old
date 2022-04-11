@@ -50,8 +50,11 @@
 			"stores/*": [
 				"app/stores/*"
 			],
-			"api/*": [
-				"server/api/*"
+			"lib": [
+				"lib"
+			],
+			"lib/*": [
+				"lib/*"
 			]
 		}
 	},

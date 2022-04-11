@@ -1,4 +1,4 @@
-import type { AsyncClientCache } from "app/components/Async";
+import type { AsyncClientCache } from "lib/Async";
 
 declare module '*.scss' {
 	const style: string;
